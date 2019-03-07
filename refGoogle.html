@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+  </head>
+  <body>
+    <video controls></video>
+    <script>
+        function H5SWebSocketClient(h5spath)
+        {
+            var socket;
+            //console.log(window.location.host);
+            try {
+                //alert(window.location.protocol);
+                console.log(window.location.protocol);
+                if (window.location.protocol == "http:") 
+                {
+                    socket = new WebSocket('ws://' + window.location.host + h5spath);
+                }
+                if (window.location.protocol == "https:")
+                {	
+                    //alert(window.location.host);
+                    console.log(window.location.host);
+                    socket = new WebSocket('wss://' + window.location.host + h5spath);			 
+                }
+                console.log(window.location.host);
+            } catch (e) {
+                alert('error');
+                return;
+            }
+            return socket;
+        }
+
+        var buffer = [];
+        var sourceBuffer;
+        var readFromBuffer = function () 
+        {
+            console.log("readFromBuffer: " + buffer.length);
+            if (buffer.length === 0 || !sourceBuffer || sourceBuffer.updating) 
+            {
+                //mediaSource.endOfStream();
+                return;
+            }
+            try {		  
+            var data = buffer.shift();
+            console.log(data instanceof ArrayBuffer);
+            console.log(data.byteLength);
+            var checkArray = new Uint8Array(data);
+            console.log("checkArray:" + checkArray[700] + " " + checkArray[800]);
+            sourceBuffer.appendBuffer(data);
+            } catch (e) {
+            console.log(e);
+            }
+        };
+
+        function onWebSocketData(msg) 
+        {
+            var blob = msg.data;
+
+            var fileReader = new FileReader();
+            fileReader.onload = function () {
+                console.log(this.result.byteLength);
+                buffer.push(this.result);
+                readFromBuffer();
+            };
+            fileReader.readAsArrayBuffer(blob);
+        }         
+
+        var vidElement = document.querySelector('video');
+
+        if (window.MediaSource) {
+            var mediaSource = new MediaSource();
+            vidElement.src = URL.createObjectURL(mediaSource);
+            mediaSource.addEventListener('sourceopen', sourceOpen);
+        } else {
+            console.log("The Media Source Extensions API is not supported.")
+        }
+
+        function sourceOpen(e) {        
+            URL.revokeObjectURL(vidElement.src);
+            //var mime = 'video/webm; codecs="opus, vp09.00.10.08"';
+            var mime = 'video/mp4; codecs="avc1.42E01E, mp4a.40.2"';
+            //var mime = 'video/mp4; codecs="avc1.42C01E, mp4a.40.2"';
+            //var mime = 'video/mp4; codecs="avc1.64001F, mp4a.40.2"';
+            var mediaSource = e.target;
+            mediaSource.duration = Infinity;
+            //var sourceBuffer = mediaSource.addSourceBuffer(mime);
+            sourceBuffer = mediaSource.addSourceBuffer(mime);
+            //var videoUrl = 'droid.webm';
+            var videoUrl = 'frag_bunny.mp4';
+            //var videoUrl = 'tenSecond.mp4';
+            //var videoUrl = 'frag_bigBuckBunny.mp4';
+            var h5spath = '/h5sws'
+            wsSocket = H5SWebSocketClient(h5spath);
+		    wsSocket.onmessage = onWebSocketData;
+		    //setInterval(keepaliveTimer, 1000);	
+            console.log('after setInterval');
+
+            sourceBuffer.addEventListener('updateend', function(e) {
+                console.log("updateend");
+                if (!sourceBuffer.updating && mediaSource.readyState === 'open') {
+                    console.log("endOfStream");
+                    mediaSource.endOfStream();
+                }
+            });
+
+            // fetch(videoUrl)
+            // .then(function(response) {
+            //     return response.arrayBuffer();
+            // })
+            // .then(function(arrayBuffer) {
+            //     sourceBuffer.addEventListener('updateend', function(e) {
+            //     console.log("updateend");
+            //     if (!sourceBuffer.updating && mediaSource.readyState === 'open') {
+            //         console.log("endOfStream");
+            //         mediaSource.endOfStream();
+            //     }
+            //     });
+            //     console.log(arrayBuffer instanceof ArrayBuffer);
+            //     console.log(arrayBuffer.byteLength);
+            //     var checkArray = new Uint8Array(arrayBuffer);
+        	// 	console.log("checkArray:" + checkArray[700] + " " + checkArray[800]);
+            //     sourceBuffer.appendBuffer(arrayBuffer);
+            // });
+        }
+    </script>
+  </body>
+</html>
