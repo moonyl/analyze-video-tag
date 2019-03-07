@@ -1,0 +1,7 @@
+
+websocketPlay/\.vs
+websocketPlay/VisualStudio/.\vs
+websocketPlay/VisualStudio/Debug
+websocketPlay/VisualStudio/checkWebSocket/Debug
+
+*.user
